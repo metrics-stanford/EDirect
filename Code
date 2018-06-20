@@ -1,0 +1,61 @@
+#Code to put into terminal to set up eDirect repository, copy and paste at the beginning of an eDirect session into Unix terminal
+cd ~
+ /bin/bash
+ perl -MNet::FTP -e \
+   '$ftp = new Net::FTP("ftp.ncbi.nlm.nih.gov", Passive => 1);
+    $ftp->login; $ftp->binary;
+    $ftp->get("/entrez/entrezdirect/edirect.tar.gz");'
+ gunzip -c edirect.tar.gz | tar xf -
+ rm edirect.tar.gz
+ builtin exit
+ export PATH=${PATH}:$HOME/edirect >& /dev/null || setenv PATH "${PATH}:$HOME/edirect"
+ ./edirect/setup.sh
+
+
+#Basic search for malaria in the journal jama between 2015 and 2017, returns the count of studies that satisfy this search
+esearch -db pubmed -query "malaria AND jama[journal]" -datetype PDAT -mindate 2015 -maxdate 2017
+
+#Basic fetch command that will return the abstracts for the id’s listed
+efetch -db pubmed -id 24102982,21171099,17150207 -format abstract
+
+#Basic use of xtract.  First fetches three pubmed id’s then pipes (use of |) the results into an xtract command that gives volume and issue, sorted by pubmedArticle
+efetch -db pubmed -id 24102982,21171099,17150207 -format xml | \
+xtract -pattern PubmedArticle -element Volume Issue
+
+
+
+
+
+#Making a txt file that contains the id’s inputted
+efetch -db pubmed -id 29649984 -format uid > testFile.txt
+
+#Use of xtract to get out funding results for the search results of a search for malaria in the journal jama between 2015 and 2017, returns PMID and funding if available
+esearch -db pubmed -query "malaria AND jama[journal]" -datetype PDAT -mindate 2010 -maxdate 2017 | \
+efetch -format xml | \
+xtract -pattern PubmedArticle -element MedlineCitation/PMID Agency 
+
+
+
+#To do the same as above but put it into an excel file, add on “> newfile.xls” at the end:
+esearch -db pubmed -query "malaria AND jama[journal]" -datetype PDAT -mindate 2010 -maxdate 2017 | \
+efetch -format xml | \
+xtract -pattern PubmedArticle -element MedlineCitation/PMID Agency > newfile.xls
+
+
+
+#Does the same as above in relation to getting out funding data but does so by inputting in PMID’s from a txt file rather than manual input
+epost -db pubmed -input PMID.txt | \
+efetch -format xml | \
+xtract -pattern PubmedArticle -element MedlineCitation/PMID Agency > fundingdata.xls
+
+
+
+#Gives one the list of chemicals used in a study, PMID’S are inputted again via a txt file
+epost -db pubmed -input PMID.txt | \
+efetch -format xml | \
+xtract -pattern PubmedArticle -element MedlineCitation/PMID NameOfSubstance > chemicalsFinal.xls
+
+#Gives one the list of keywords that relate to the study, these usually include the main disease and the main form of treatment
+epost -db pubmed -input PMID.txt | \
+efetch -format xml | \
+xtract -pattern PubmedArticle -element MedlineCitation/PMID Keyword > keyWordFile.xls
